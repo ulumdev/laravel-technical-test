@@ -12,13 +12,22 @@ class ProjectController extends Controller
     public function index(Request $request)
     {
         $query = $request->get('query');
-        $projects = Project::when($query, function ($q) use ($query) {
-            return $q->where('name', 'like', "%{$query}%");
-        })->orderBy($request->get('sort', 'created_at'), $request->get('order', 'desc'))->with('tasks')->paginate(10);
+        $showTrash = $request->get('trash') == 1;
+        $sort = $request->get('sort', 'created_at');
+        $order = $request->get('order', 'desc');
+
+        $builder = $showTrash ? Project::onlyTrashed() : Project::query();
+
+        $projects = $builder
+            ->when($query, fn($q) => $q->where('name', 'like', "%{$query}%"))
+            ->orderBy($sort, $order)
+            ->withCount('tasks')
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('Projects/Index', [
             'projects' => $projects,
-            'filters' => $request->only(['query', 'sort', 'order']),
+            'filters' => $request->only('query', 'sort', 'order', 'trash'),
         ]);
     }
 
@@ -55,7 +64,7 @@ class ProjectController extends Controller
         $data = $request->validate([
             'name' => 'required|string',
             'details' => 'nullable|json',
-            'is_active' => 'boolean',
+            'is_active' => 'required|boolean',
             'start_date' => 'nullable|date',
         ]);
 
@@ -67,7 +76,19 @@ class ProjectController extends Controller
     public function destroy(Project $project)
     {
         $project->delete();
-
         return redirect()->route('projects.index')->with('success', 'Project deleted successfully.');
+    }
+
+    public function restore($id)
+    {
+        Project::onlyTrashed()->findOrFail($id)->restore();
+        return redirect()->route('projects.index')->with('success', 'Project restored successfully.');
+    }
+
+    public function forceDelete($id)
+    {
+        $project = Project::onlyTrashed()->findOrFail($id);
+        $project->forceDelete();
+        return redirect()->route('projects.index')->with('success', 'Project permanently deleted successfully.');
     }
 }

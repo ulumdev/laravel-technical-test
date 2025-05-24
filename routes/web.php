@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -39,32 +42,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // CRUD Role (all roles)
-    Route::resource('/roles', RoleController::class)->only([
-        'index',
-        'create',
-        'store',
-        'edit',
-        'update',
-        'destroy',
-        'show'
-    ]);
+    Route::resource('/roles', RoleController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy', 'show']);
 
 
     // CRUD User (all roles)
-    Route::resource('/users', UserController::class)->only([
-        'index',
-        'create',
-        'store',
-        'edit',
-        'update',
-        'destroy',
-        'show'
-    ]);
+    Route::resource('/users', UserController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy', 'show']);
 
     // CRUD User (only for admin)
     // Route::middleware(['role:Administrator'])->group(function () {
     //     Route::resource('/users', UserController::class);
     // });
+
+    // CRUD Project (all roles)
+    Route::resource('projects', ProjectController::class);
+    Route::post('projects/{project}/restore', [ProjectController::class, 'restore'])->name('projects.restore');
+    Route::delete('projects/{project}/force-delete', [ProjectController::class, 'forceDelete'])->name('projects.forceDelete');
+
+    // CRUD Task (all roles)
+    Route::resource('tasks', TaskController::class);
+    Route::post('tasks/{task}/restore', [TaskController::class, 'restore'])->name('tasks.restore');
+    Route::delete('tasks/{task}/force-delete', [TaskController::class, 'forceDelete'])->name('tasks.forceDelete');
+
+    // CRUD Attachment (all roles)
+    Route::resource('attachments', AttachmentController::class);
+    Route::post('attachments/{attachment}/restore', [AttachmentController::class, 'restore'])->name('attachments.restore');
+    Route::delete('attachments/{attachment}/force-delete', [AttachmentController::class, 'forceDelete'])->name('attachments.forceDelete');
 });
 
 require __DIR__ . '/auth.php';
