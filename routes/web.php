@@ -60,6 +60,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // CRUD Task (all roles)
     Route::resource('tasks', TaskController::class);
+    // Tambahkan kedua route ini!
+    // Route::put('attachments/{attachment}', [AttachmentController::class, 'update'])->name('attachments.update');
+    Route::post('attachments/{attachment}', [AttachmentController::class, 'update']);
     Route::post('tasks/{task}/restore', [TaskController::class, 'restore'])->name('tasks.restore');
     Route::delete('tasks/{task}/force-delete', [TaskController::class, 'forceDelete'])->name('tasks.forceDelete');
 

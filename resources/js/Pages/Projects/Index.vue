@@ -16,7 +16,7 @@
                 <option value="asc">Ascending</option>
                 <option value="desc">Descending</option>
             </select>
-            <button @click="toogleTrash">
+            <button @click="toggleTrash">
                 {{ filters.trash == 1 ? "Show Active" : "Show Trash" }}
             </button>
             <Link href="/projects/create">+ Add Project</Link>
@@ -101,7 +101,7 @@ function applyFilter() {
     router.get("/projects", filters, { preserveState: true, replace: true });
 }
 
-function toogleTrash() {
+function toggleTrash() {
     filters.trash = filters.trash == 1 ? 0 : 1;
     applyFilter();
 }
@@ -118,14 +118,14 @@ function deleteProject(id) {
 
 function restoreProject(id) {
     if (confirm("Restore this project?")) {
-        toogleTrash();
+        toggleTrash();
         router.post(`/projects/${id}/restore`);
     }
 }
 
 function confirmDeletePermanently(id) {
     if (confirm("Delete permanently this project?")) {
-        toogleTrash();
+        toggleTrash();
         router.delete(`/projects/${id}/force-delete`);
     }
 }

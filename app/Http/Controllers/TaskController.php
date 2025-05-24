@@ -13,15 +13,27 @@ class TaskController extends Controller
     public function index(Request $request)
     {
         $query = $request->get('query');
-        $tasks = Task::with('project')
-            ->when($query, function ($q) use ($query) {
-                return $q->where('title', 'like', "%{$query}%");
-            })->orderBy($request->get('sort', 'created_at'), $request->get('order', 'desc'))
-            ->paginate(10);
+        $showTrash = $request->get('trash') == 1;
+        $sort = $request->get('sort', 'created_at');
+        $order = $request->get('order', 'desc');
+
+        $builder = $showTrash ? Task::onlyTrashed() : Task::query();
+
+        $tasks = $builder
+            ->when($query, fn($q) => $q->where('title', 'like', "%{$query}%"))
+            ->orderBy($sort, $order)
+            ->withCount('attachments')
+            ->paginate(10)
+            ->withQueryString();
+        // $tasks = Task::with('project')
+        //     ->when($query, function ($q) use ($query) {
+        //         return $q->where('title', 'like', "%{$query}%");
+        //     })->orderBy($request->get('sort', 'created_at'), $request->get('order', 'desc'))
+        //     ->paginate(10);
 
         return Inertia::render('Tasks/Index', [
             'tasks' => $tasks,
-            'filters' => $request->only(['query', 'sort', 'order']),
+            'filters' => $request->only(['query', 'sort', 'order', 'trash']),
         ]);
     }
 
@@ -79,5 +91,18 @@ class TaskController extends Controller
         $task->delete();
 
         return redirect()->route('tasks.index')->with('success', 'Task deleted successfully.');
+    }
+
+    public function restore($id)
+    {
+        Task::onlyTrashed()->findOrFail($id)->restore();
+        return redirect()->route('tasks.index')->with('success', 'Task restored successfully.');
+    }
+
+    public function forceDelete($id)
+    {
+        $task = Task::onlyTrashed()->findOrFail($id);
+        $task->forceDelete();
+        return redirect()->route('tasks.index')->with('success', 'Task permanently deleted successfully.');
     }
 }

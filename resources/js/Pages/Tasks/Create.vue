@@ -1,32 +1,41 @@
 <template>
-    <form @submit.prevent="submit">
-        <label>Title</label>
-        <input v-model="form.title" type="text" required />
-        <label>Project</label>
-        <select v-model="form.project_id" required>
-            <option
-                v-for="project in projects"
-                :key="project.id"
-                :value="project.id"
-            >
-                {{ project.name }}
-            </option>
-        </select>
-        <label>Due Date</label>
-        <input v-model="form.due_date" type="datetime-local" required />
-        <label>Is Done?</label>
-        <input type="checkbox" v-model="form.is_done" />
-        <label>Metadata (JSON)</label>
-        <textarea v-model="form.metadata"></textarea>
-        <button type="submit">Create</button>
-    </form>
+    <div>
+        <h2>Create Task</h2>
+        <form @submit.prevent="submit">
+            <div>
+                <label>Title</label>
+                <input v-model="form.title" required />
+            </div>
+            <div>
+                <label>Project</label>
+                <select v-model="form.project_id" required>
+                    <option value="">-- Select Project --</option>
+                    <option v-for="p in projects" :value="p.id" :key="p.id">
+                        {{ p.name }}
+                    </option>
+                </select>
+            </div>
+            <div>
+                <label>Due Date</label>
+                <input type="datetime-local" v-model="form.due_date" />
+            </div>
+            <div>
+                <label>Is Done?</label>
+                <input type="checkbox" v-model="form.is_done" />
+            </div>
+            <div>
+                <label>Metadata (JSON)</label>
+                <textarea v-model="form.metadata" />
+            </div>
+            <button type="submit">Create</button>
+            <Link href="/tasks">Back</Link>
+        </form>
+        <span v-if="form.errors.title">{{ form.errors.title }}</span>
+    </div>
 </template>
-
 <script setup>
-import { useForm } from "@inertiajs/vue3";
-const props = defineProps({
-    projects: Array,
-});
+import { useForm, Link } from "@inertiajs/vue3";
+const props = defineProps({ projects: Array });
 const form = useForm({
     title: "",
     project_id: "",
@@ -35,13 +44,6 @@ const form = useForm({
     metadata: "{}",
 });
 function submit() {
-    form.post("/tasks", {
-        onSuccess: () => {
-            form.reset();
-        },
-        onError: (errors) => {
-            console.error(errors);
-        },
-    });
+    form.post("/tasks");
 }
 </script>

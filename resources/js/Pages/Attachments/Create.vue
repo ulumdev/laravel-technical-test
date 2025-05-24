@@ -1,25 +1,22 @@
 <template>
     <div>
-        <h2>Create Attachment</h2>
-        <form @submit.prevent="submit">
+        <h2>Upload Attachment</h2>
+        <form @submit.prevent="submit" enctype="multipart/form-data">
             <div>
                 <label>Task</label>
-                <select v-model="form.task_id">
-                    <option
-                        v-for="task in tasks"
-                        :key="task.id"
-                        :value="task.id"
-                    >
-                        {{ task.title }}
+                <select v-model="form.task_id" required>
+                    <option value="">-- Select Task --</option>
+                    <option v-for="t in tasks" :value="t.id" :key="t.id">
+                        {{ t.title }}
                     </option>
                 </select>
             </div>
             <div>
-                <label>File (PDF 100-500 kb)</label>
+                <label>PDF File (100-500KB)</label>
                 <input
                     type="file"
-                    @change="(e) => (form.file = e.target.files[0])"
                     accept="application/pdf"
+                    @change="(e) => (form.file = e.target.files[0])"
                     required
                 />
             </div>
@@ -29,32 +26,19 @@
             </div>
             <div>
                 <label>Info (JSON)</label>
-                <textarea v-model="form.info"></textarea>
+                <textarea v-model="form.info" />
             </div>
-            <button type="submit">Create Project</button>
+            <button type="submit">Upload</button>
+            <Link href="/attachments">Back</Link>
+            <span v-if="form.errors.file">{{ form.errors.file }}</span>
         </form>
     </div>
 </template>
-
 <script setup>
-import { useForm } from "@inertiajs/vue3";
-const props = defineProps({
-    tasks: Array,
-});
-const form = useForm({
-    task_id: "",
-    file: null,
-    is_public: false,
-    info: "{}",
-});
+import { useForm, Link } from "@inertiajs/vue3";
+const props = defineProps({ tasks: Array });
+const form = useForm({ task_id: "", file: null, is_public: false, info: "{}" });
 function submit() {
-    form.post("/attachments", {
-        onSuccess: () => {
-            form.reset();
-        },
-        onError: (errors) => {
-            console.error(errors);
-        },
-    });
+    form.post("/attachments", { forceFormData: true });
 }
 </script>

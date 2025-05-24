@@ -14,20 +14,28 @@ class AttachmentController extends Controller
     public function index(Request $request)
     {
         $query = $request->get('query');
-        $attachments = Attachment::with('task')
-            ->when($query, function ($q) use ($query) {
-                return $q->where('file_path', 'like', "%{$query}%");
-            })->orderBy($request->get('sort', 'created_at'), $request->get('order', 'desc'))
-            ->paginate(10);
+        $showTrash = $request->get('trash') == 1;
+        $sort = $request->get('sort', 'created_at');
+        $order = $request->get('order', 'desc');
+
+        $builder = $showTrash ? Attachment::onlyTrashed() : Attachment::query();
+
+        $attachments = $builder
+            ->when($query, fn($q) => $q->where('file_path', 'like', "%$query%"))
+            ->orderBy($sort, $order)
+            ->with(['task.project'])
+            ->paginate(10)
+            ->withQueryString();
+
         return Inertia::render('Attachments/Index', [
             'attachments' => $attachments,
-            'filters' => $request->only(['query', 'sort', 'order']),
+            'filters' => $request->only('q', 'sort', 'order', 'trash'),
         ]);
     }
 
     public function create()
     {
-        $tasks = Task::all(['id', 'title']);
+        $tasks = Task::select(['id', 'title'])->get();
         return Inertia::render('Attachments/Create', [
             'tasks' => $tasks,
         ]);
@@ -63,10 +71,12 @@ class AttachmentController extends Controller
 
     public function update(Request $request, Attachment $attachment)
     {
+
         $data = $request->validate([
             'task_id' => 'required|uuid|exists:tasks,id',
             'info' => 'nullable|json',
             'is_public' => 'boolean',
+            // 'file' => 'sometimes|mimes:pdf|file|between:100,500',
         ]);
 
         if ($request->hasFile('file')) {
@@ -89,5 +99,18 @@ class AttachmentController extends Controller
         $attachment->delete();
 
         return redirect()->route('attachments.index')->with('success', 'Attachment deleted successfully.');
+    }
+
+    public function restore($id)
+    {
+        Attachment::onlyTrashed()->findOrFail($id)->restore();
+        return redirect()->route('attachments.index')->with('success', 'Attachment restored successfully.');
+    }
+
+    public function forceDelete($id)
+    {
+        $attachment = Attachment::onlyTrashed()->findOrFail($id);
+        $attachment->forceDelete();
+        return redirect()->route('attachments.index')->with('success', 'Attachment permanently deleted successfully.');
     }
 }
