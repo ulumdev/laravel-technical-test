@@ -58,6 +58,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('projects/{project}/restore', [ProjectController::class, 'restore'])->name('projects.restore');
     Route::delete('projects/{project}/force-delete', [ProjectController::class, 'forceDelete'])->name('projects.forceDelete');
 
+    // Route::get('projects/export', [ProjectController::class, 'export'])->name('projects.export');
+    // Route::get('projects/export', [ProjectController::class, 'exportExcel'])->name('projects.export');
+    // Route::post('projects/import', [ProjectController::class, 'importExcel'])->name('projects.import');
+
     // CRUD Task (all roles)
     Route::resource('tasks', TaskController::class);
     // Tambahkan kedua route ini!
@@ -67,9 +71,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('tasks/{task}/force-delete', [TaskController::class, 'forceDelete'])->name('tasks.forceDelete');
 
     // CRUD Attachment (all roles)
-    Route::resource('attachments', AttachmentController::class);
-    Route::post('attachments/{attachment}/restore', [AttachmentController::class, 'restore'])->name('attachments.restore');
-    Route::delete('attachments/{attachment}/force-delete', [AttachmentController::class, 'forceDelete'])->name('attachments.forceDelete');
+    // Route::resource('attachments', AttachmentController::class);
+    // Route::post('attachments/{attachment}/restore', [AttachmentController::class, 'restore'])->name('attachments.restore');
+    // Route::delete('attachments/{attachment}/force-delete', [AttachmentController::class, 'forceDelete'])->name('attachments.forceDelete');
+
+
+    // Route for Export and Import Excel
+    Route::get('{entity}/export', [\App\Http\Controllers\ExcelController::class, 'export']);
+
+    Route::get('export-jobs', [\App\Http\Controllers\ExcelController::class, 'exportJobs']);
+    Route::get('download-export', [\App\Http\Controllers\ExcelController::class, 'downloadExport']);
+
+    Route::post('{entity}/import', [\App\Http\Controllers\ExcelController::class, 'import']);
+    // Route::get('download-export', [\App\Http\Controllers\ExcelController::class, 'download']);
 });
 
 require __DIR__ . '/auth.php';

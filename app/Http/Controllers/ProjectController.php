@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\DynamicExport;
+use App\Exports\ProjectExport;
+use App\Jobs\ExportProjectToExcel;
+use App\Jobs\ImportProjectFromExcel;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
 use OwenIt\Auditing\Auditor;
 
 class ProjectController extends Controller
@@ -106,4 +111,53 @@ class ProjectController extends Controller
             'audits' => $project->audits()->with('user')->latest()->get(),
         ]);
     }
+
+    // public function exportExcel(Request $request)
+    // {
+    //     $fields = explode(',', $request->get('fields', 'id,name'));
+    //     // Dispatch job to queue
+    //     $fileName = 'projects_export_' . time() . '.xlsx';
+    //     Excel::queue(new DynamicProjectExport($fields), $fileName, 'exports');
+    //     return back()->with('success', 'Export sedang diproses di background, silahkan check halaman download nanti.');
+    // }
+
+    // public function exportExcel(Request $request)
+    // {
+    //     $fields = $request->get('fields', 'id,name');
+    //     ExportProjectToExcel::dispatch(
+    //         $fields,
+    //         auth()->user->id
+    //     );
+    //     return back()->with('success', 'Export sedang diproses di background, silahkan check halaman download nanti.');
+    // }
+
+    // public function importExcel(Request $request)
+    // {
+    //     $request->validate([
+    //         'file' => 'required|file|mimes:xlsx,csv',
+    //         'mapping' => 'required|array',
+    //     ]);
+
+    //     $path = $request->file('file')->store('imports');
+    //     ImportProjectFromExcel::dispatch(
+    //         $path,
+    //         $request->input('mapping')
+    //     );
+
+    //     return back()->with('success', 'Import sedang diproses di background, silahkan check halaman proyek nanti.');
+    // }
+
+    // public function export()
+    // {
+    //     return Excel::download(new ProjectExport, 'projects.xlsx', true, ['X-Vapor-Base64-Encode' => 'True']);
+    // }
+
+    // public function export(Request $request)
+    // {
+    //     $fields = $request->get('fields', 'id,name');
+    //     $fileName = 'projects_export_' . now()->timestamp . '.xlsx';
+    //     // QUEUE JOB
+    //     Excel::queue(new DynamicExport(\App\Models\Project::class, $fields), $fileName, 'exports');
+    //     return back()->with('success', 'Export sedang diproses di background, silahkan check halaman download nanti.');
+    // }
 }
