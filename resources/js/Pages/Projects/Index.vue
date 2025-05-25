@@ -29,6 +29,7 @@
                     <th>Start Date</th>
                     <th>Tasks Count</th>
                     <th>Action</th>
+                    <th>History</th>
                 </tr>
             </thead>
             <tbody>
@@ -70,6 +71,9 @@
                             />
                             <button type="submit">Delete</button>
                         </form>
+                    </td>
+                    <td>
+                        <Link :href="`/projects/${project.id}`">History</Link>
                     </td>
                 </tr>
             </tbody>

@@ -27,6 +27,15 @@
                 <label>Metadata (JSON)</label>
                 <textarea v-model="form.metadata" />
             </div>
+
+            <div>
+                <label>Audit Note</label>
+                <textarea
+                    v-model="form.audit_note"
+                    placeholder="Change notes (optional)"
+                ></textarea>
+            </div>
+
             <button type="submit">Save</button>
             <Link href="/tasks">Back</Link>
         </form>
@@ -42,6 +51,7 @@ const form = useForm({
     due_date: props.task.due_date ? props.task.due_date.substring(0, 16) : "",
     is_done: !!props.task.is_done,
     metadata: props.task.metadata,
+    audit_note: props.task.auditCustomNote || "",
 });
 function submit() {
     form.put(`/tasks/${props.task.id}`);

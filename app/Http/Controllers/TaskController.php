@@ -53,11 +53,13 @@ class TaskController extends Controller
             'metadata' => 'nullable|json',
             'is_done' => 'boolean',
             'due_date' => 'nullable|date',
+            'audit_note' => 'nullable|string|max:255', // Optional field for audit notes
         ]);
 
-        $data['id'] = Str::uuid();
-
-        Task::create($data);
+        $task = new Task($data);
+        $task->auditCustomNote = $data['audit_note'] ?? 'Store - Task'; // Set custom audit note if provided
+        $task->id = (string) Str::uuid(); // Generate a new UUID for the task
+        $task->save();
 
         return redirect()->route('tasks.index')->with('success', 'Task created successfully.');
     }
@@ -79,8 +81,10 @@ class TaskController extends Controller
             'metadata' => 'nullable|json',
             'is_done' => 'boolean',
             'due_date' => 'nullable|date',
+            'audit_note' => 'nullable|string|max:255', // Optional field for audit notes
         ]);
 
+        $task->auditCustomNote = $data['audit_note'] ?? 'Update - Task'; // Set custom audit note if provided
         $task->update($data);
 
         return redirect()->route('tasks.index')->with('success', 'Task updated successfully.');
@@ -88,8 +92,8 @@ class TaskController extends Controller
 
     public function destroy(Task $task)
     {
+        $task->auditCustomNote = 'Delete - Task'; // Set custom audit note for deletion
         $task->delete();
-
         return redirect()->route('tasks.index')->with('success', 'Task deleted successfully.');
     }
 
@@ -104,5 +108,14 @@ class TaskController extends Controller
         $task = Task::onlyTrashed()->findOrFail($id);
         $task->forceDelete();
         return redirect()->route('tasks.index')->with('success', 'Task permanently deleted successfully.');
+    }
+
+    public function show(Task $task)
+    {
+        $task->load('audits');
+        return Inertia::render('Tasks/Show', [
+            'task' => $task,
+            'audits' => $task->audits()->with('user')->latest()->get(),
+        ]);
     }
 }

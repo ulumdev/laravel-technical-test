@@ -5,6 +5,7 @@
 
         <Link href="/roles">Manage Roles</Link> |
         <Link href="/users">Manage Users (Admin only)</Link>
+        <Link :href="route('logout')" method="post" as="button">Log Out</Link>
     </div>
 </template>
 

@@ -18,6 +18,14 @@
                 <label>Start Date</label>
                 <input type="datetime-local" v-model="form.start_date" />
             </div>
+
+            <div>
+                <label>Audit Note</label>
+                <textarea
+                    v-model="form.audit_note"
+                    placeholder="Change notes (optional)"
+                ></textarea>
+            </div>
             <button type="submit">Save</button>
             <Link href="/projects">Back</Link>
         </form>
@@ -35,6 +43,7 @@ const form = useForm({
     start_date: props.project.start_date
         ? props.project.start_date.substring(0, 16)
         : "",
+    audit_note: props.project.auditCustomNote || "",
 });
 function submit() {
     form.put(`/projects/${props.project.id}`);

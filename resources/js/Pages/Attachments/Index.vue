@@ -74,6 +74,9 @@
                             <button type="submit">Delete</button>
                         </form>
                     </td>
+                    <td>
+                        <Link :href="`/attachments/${a.id}`">History</Link>
+                    </td>
                 </tr>
             </tbody>
         </table>

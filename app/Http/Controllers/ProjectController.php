@@ -6,6 +6,7 @@ use App\Models\Project;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
+use OwenIt\Auditing\Auditor;
 
 class ProjectController extends Controller
 {
@@ -43,11 +44,13 @@ class ProjectController extends Controller
             'details' => 'nullable|json',
             'is_active' => 'boolean',
             'start_date' => 'nullable|date',
+            'audit_note' => 'nullable|string|max:255', // Optional field for audit notes
         ]);
 
-        $data['id'] = Str::uuid();
-
-        Project::create($data);
+        $project = new Project($data);
+        $project->id = (string)Str::uuid();
+        $project->auditCustomNote = $data['audit_note'] ?? 'Store - Project'; // Set custom audit note if provided
+        $project->save();
 
         return redirect()->route('projects.index')->with('success', 'Project created successfully.');
     }
@@ -66,15 +69,18 @@ class ProjectController extends Controller
             'details' => 'nullable|json',
             'is_active' => 'required|boolean',
             'start_date' => 'nullable|date',
+            'audit_note' => 'nullable|string|max:255', // Optional field for audit notes
         ]);
 
+        $project->auditCustomNote = $data['audit_note'] ?? 'Update - Project'; // Set custom audit note if provided
         $project->update($data);
 
-        return redirect()->route('projects.index')->with('success', 'Project updated successfully.');
+        return redirect()->route('projects.show', $project->id)->with('success', 'Project updated successfully.');
     }
 
     public function destroy(Project $project)
     {
+        $project->auditCustomNote = 'Delete - Project'; // Set custom audit note for deletion
         $project->delete();
         return redirect()->route('projects.index')->with('success', 'Project deleted successfully.');
     }
@@ -90,5 +96,14 @@ class ProjectController extends Controller
         $project = Project::onlyTrashed()->findOrFail($id);
         $project->forceDelete();
         return redirect()->route('projects.index')->with('success', 'Project permanently deleted successfully.');
+    }
+
+    public function show(Project $project)
+    {
+        $project->load('audits');
+        return Inertia::render('Projects/Show', [
+            'project' => $project,
+            'audits' => $project->audits()->with('user')->latest()->get(),
+        ]);
     }
 }

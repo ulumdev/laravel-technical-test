@@ -48,14 +48,15 @@ class AttachmentController extends Controller
             'file' => 'required|mimes:pdf|file|between:100,500',
             'info' => 'nullable|json',
             'is_public' => 'boolean',
+            'audit_note' => 'nullable|string|max:255', // Optional field for audit notes
         ]);
 
-        $data['id'] = Str::uuid();
-        $data['uploaded_at'] = now();
-
-        $data['file_path'] = $request->file('file')->store('attachments', 'public');
-
-        Attachment::create($data);
+        $attachment = new Attachment($data);
+        $attachment->auditCustomNote = $data['audit_note'] ?? 'Store - Attachment'; // Set custom audit note if provided
+        $attachment->id = (string) Str::uuid(); // Generate a new UUID for the attachment
+        $attachment->uploaded_at = now(); // Set the uploaded_at timestamp
+        $attachment->file_path = $request->file('file')->store('attachments', 'public'); // Store the file
+        $attachment->save();
 
         return redirect()->route('attachments.index')->with('success', 'Attachment created successfully.');
     }
@@ -76,6 +77,7 @@ class AttachmentController extends Controller
             'task_id' => 'required|uuid|exists:tasks,id',
             'info' => 'nullable|json',
             'is_public' => 'boolean',
+            'audit_note' => 'nullable|string|max:255', // Optional field for audit notes
             // 'file' => 'sometimes|mimes:pdf|file|between:100,500',
         ]);
 
@@ -88,6 +90,7 @@ class AttachmentController extends Controller
             $data['uploaded_at'] = now();
         }
 
+        $attachment->auditCustomNote = $data['audit_note'] ?? 'Update - Attachment'; // Set custom audit note if provided
         $attachment->update($data);
 
         return redirect()->route('attachments.index')->with('success', 'Attachment updated successfully.');
@@ -95,7 +98,8 @@ class AttachmentController extends Controller
 
     public function destroy(Attachment $attachment)
     {
-        Storage::disk('public')->delete($attachment->file_path);
+        // Storage::disk('public')->delete($attachment->file_path);
+        $attachment->auditCustomNote = 'Delete - Attachment'; // Set custom audit note for deletion
         $attachment->delete();
 
         return redirect()->route('attachments.index')->with('success', 'Attachment deleted successfully.');
@@ -110,7 +114,17 @@ class AttachmentController extends Controller
     public function forceDelete($id)
     {
         $attachment = Attachment::onlyTrashed()->findOrFail($id);
+        Storage::disk('public')->delete($attachment->file_path); // Delete the file from storage
         $attachment->forceDelete();
         return redirect()->route('attachments.index')->with('success', 'Attachment permanently deleted successfully.');
+    }
+
+    public function show(Attachment $attachment)
+    {
+        $attachment->load('audits');
+        return Inertia::render('Attachments/Show', [
+            'attachment' => $attachment,
+            'audits' => $attachment->audits()->with('user')->latest()->get(),
+        ]);
     }
 }

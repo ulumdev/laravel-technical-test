@@ -69,6 +69,9 @@
                             <button type="submit">Delete</button>
                         </form>
                     </td>
+                    <td>
+                        <Link :href="`/tasks/${task.id}`">History</Link>
+                    </td>
                 </tr>
             </tbody>
         </table>

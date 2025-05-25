@@ -27,6 +27,13 @@
                 <label>Info (JSON)</label>
                 <textarea v-model="form.info" />
             </div>
+            <div>
+                <label>Audit Note</label>
+                <textarea
+                    v-model="form.audit_note"
+                    placeholder="Change notes (optional)"
+                ></textarea>
+            </div>
             <button type="submit">Save</button>
             <Link href="/attachments">Back</Link>
             <span v-if="form.errors.file">{{ form.errors.file }}</span>
@@ -41,6 +48,7 @@ const form = useForm({
     file: null,
     is_public: !!props.attachment.is_public,
     info: props.attachment.info,
+    audit_note: props.attachment.auditCustomNote || "",
 });
 function submit() {
     form.post(`/attachments/${props.attachment.id}`, {
