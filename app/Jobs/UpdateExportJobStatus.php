@@ -16,7 +16,7 @@ class UpdateExportJobStatus implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct($exportJobId, $status, $fileName)
+    public function __construct($exportJobId, $status, $fileName = null)
     {
         $this->exportJobId = $exportJobId;
         $this->status = $status;

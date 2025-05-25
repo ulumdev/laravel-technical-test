@@ -3,6 +3,23 @@
     <ExportForm :fields="fields" entity="project" />
     <ImportForm :dbFields="fields" entity="project" />
 
+    <!-- Daftar Import Jobs -->
+    <div v-if="importJobs.length" style="margin: 1.5em 0">
+        <h3>Daftar Import Terakhir</h3>
+        <ul>
+            <li v-for="job in importJobs" :key="job.id">
+                [{{ job.status }}] {{ job.file_name }}
+                <span v-if="job.status === 'completed'">
+                    (Import selesai!)</span
+                >
+                <span v-else-if="job.status === 'failed'">
+                    (Gagal: {{ job.message }})</span
+                >
+                <span v-else> (sedang diproses...)</span>
+            </li>
+        </ul>
+    </div>
+
     <!-- Tambahkan daftar export jobs -->
     <div v-if="exportJobs.length" style="margin: 1.5em 0">
         <h3>Daftar Export Terakhir</h3>
@@ -114,6 +131,9 @@ const exportJobs = ref([]);
 const lastExportJobId = ref(null);
 const alreadyDownloadsJobIds = ref([]);
 
+const importJobs = ref([]);
+const lastImportJobId = ref(null);
+
 function fetchJobs() {
     fetch("/export-jobs")
         .then((res) => res.json())
@@ -134,9 +154,22 @@ function fetchJobs() {
         });
 }
 
+function fetchImportJobs() {
+    fetch("/import-jobs")
+        .then((res) => res.json())
+        .then((jobs) => {
+            importJobs.value = jobs;
+        });
+}
+
 function onExported(job_id) {
     lastExportJobId.value = job_id;
     fetchJobs();
+}
+
+function onImported(job_id) {
+    lastImportJobId.value = job_id;
+    fetchImportJobs();
 }
 
 function downloadExport(jobId) {
@@ -146,7 +179,9 @@ function downloadExport(jobId) {
 // pooling setiap 5 detik
 onMounted(() => {
     fetchJobs();
+    fetchImportJobs();
     setInterval(fetchJobs, 5000);
+    setInterval(fetchImportJobs, 5000);
 });
 
 const props = defineProps({

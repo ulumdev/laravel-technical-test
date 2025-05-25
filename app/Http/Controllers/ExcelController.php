@@ -7,7 +7,10 @@ use Illuminate\Support\Facades\Auth;
 use App\Exports\DynamicExport;
 use App\Imports\DynamicImport;
 use App\Jobs\UpdateExportJobStatus;
+use App\Jobs\UpdateImportJobStatus;
 use App\Models\ExportJob;
+use App\Models\ImportJob;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ExcelController extends Controller
@@ -80,16 +83,62 @@ class ExcelController extends Controller
         return response()->download($filePath);
     }
 
-    // Import
     public function import(Request $request, $entity)
     {
         $request->validate([
             'file'    => 'required|file|mimes:xlsx,xls,csv',
-            'mapping' => 'required|array',
+            'mapping' => 'required',
         ]);
-        $path = $request->file('file')->store('imports');
-        // Import via queue
-        (new DynamicImport($this->entityMap[$entity], $request->mapping))->queue(storage_path('app/' . $path));
-        return back()->with('success', 'Import sedang diproses di background!');
+
+        // Parsing mapping json jika string
+        $mapping = $request->mapping;
+        if (is_string($mapping)) {
+            $mapping = json_decode($mapping, true);
+        }
+        if (!is_array($mapping)) {
+            return response()->json(['message' => 'Mapping tidak valid'], 422);
+        }
+
+        $file = $request->file('file');
+        $fileName = $entity . '_' . Auth::id() . '_' . now()->timestamp . '.' . $file->getClientOriginalExtension();
+        // $path = $file->storeAs('imports', $fileName);
+
+        // Simpan file ke disk 'imports' (storage/app/imports)
+        Storage::disk('imports')->putFileAs(
+            '',
+            $file,
+            $fileName
+        );
+        // Hanya nama file (relatif terhadap disk 'imports')
+        $path = $fileName;
+
+        $importJob = ImportJob::create([
+            'user_id'   => Auth::id(),
+            'entity'    => $entity,
+            'file_name' => $fileName,
+            'status'    => 'processing',
+        ]);
+
+        // Import via queue, gunakan Excel::queueImport
+        Excel::queueImport(
+            new DynamicImport($this->entityMap[$entity], $mapping),
+            $path,
+            'imports'
+        )->chain(
+            [
+                new UpdateImportJobStatus($importJob->id, 'completed', 'Import completed', $fileName)
+            ]
+        );
+
+        return response()->json(['job_id' => $importJob->id]);
+    }
+
+    public function importJobs(Request $request)
+    {
+        $jobs = ImportJob::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->take(10)->get();
+
+        return response()->json($jobs);
     }
 }

@@ -83,6 +83,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('download-export', [\App\Http\Controllers\ExcelController::class, 'downloadExport']);
 
     Route::post('{entity}/import', [\App\Http\Controllers\ExcelController::class, 'import']);
+    Route::get('import-jobs', [\App\Http\Controllers\ExcelController::class, 'importJobs']);
     // Route::get('download-export', [\App\Http\Controllers\ExcelController::class, 'download']);
 });
 

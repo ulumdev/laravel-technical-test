@@ -1,38 +1,77 @@
 <template>
-    <form @submit.prevent="submitImport" enctype="multipart/form-data">
-        <input type="file" @change="onFileChange" required />
-        <div v-if="headers.length">
-            <div v-for="header in headers" :key="header">
-                {{ header }}:
-                <select v-model="mapping[header]">
-                    <option value="">---</option>
-                    <option v-for="f in dbFields" :key="f" :value="f">
-                        {{ f }}
-                    </option>
-                </select>
-            </div>
-            <button type="submit">Import</button>
+    <form @submit.prevent="importExcel" enctype="multipart/form-data">
+        <input
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            @change="fileChanged"
+            required
+        />
+        <div v-for="f in dbFields" :key="f" style="margin-bottom: 0.25em">
+            <label
+                >{{ f }}
+                <input v-model="mapping[f]" placeholder="Kolom di file..."
+            /></label>
         </div>
+        <button type="submit" :disabled="!file || loading">Import</button>
+        <span v-if="loading">Uploading...</span>
     </form>
 </template>
 
 <script setup>
 import { ref } from "vue";
 const props = defineProps({ dbFields: Array, entity: String });
-
-const headers = ref([]); // produksi: ambil header dari file excel
+const emit = defineEmits(["imported"]);
+const file = ref(null);
 const mapping = ref({});
+const loading = ref(false);
 
-function onFileChange(e) {
-    // Produksi: parsing header excel di backend, di sini dummy
-    headers.value = ["A", "B", "C"];
-    mapping.value = Object.fromEntries(headers.value.map((h) => [h, ""]));
+function fileChanged(e) {
+    file.value = e.target.files[0];
 }
 
-function submitImport() {
-    const fd = new FormData();
-    fd.append("file", document.querySelector("input[type=file]").files[0]);
-    fd.append("mapping", JSON.stringify(mapping.value));
-    fetch(`/${props.entity}/import`, { method: "POST", body: fd });
+async function importExcel() {
+    if (!file.value) return;
+    loading.value = true;
+    const formData = new FormData();
+    formData.append("file", file.value);
+    formData.append("mapping", JSON.stringify(mapping.value));
+
+    // Pastikan meta csrf-token ada di <head>
+    const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+    if (!tokenMeta) {
+        alert("CSRF token not found.");
+        loading.value = false;
+        return;
+    }
+    const token = tokenMeta.getAttribute("content");
+
+    try {
+        const res = await fetch(`/${props.entity}/import`, {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-CSRF-TOKEN": token,
+                "Accept": "application/json",
+            },
+            credentials: "same-origin",
+        });
+        // Tangkap error validasi / server
+        const contentType = res.headers.get("content-type") || "";
+        if (!res.ok) {
+            if (contentType.includes("application/json")) {
+                const data = await res.json();
+                throw new Error(data.message || JSON.stringify(data));
+            } else {
+                const text = await res.text();
+                throw new Error(text);
+            }
+        }
+        const data = await res.json();
+        emit("imported", data.job_id);
+    } catch (err) {
+        alert("Gagal upload: " + err.message);
+    } finally {
+        loading.value = false;
+    }
 }
 </script>
